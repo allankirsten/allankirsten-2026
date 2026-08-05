@@ -7,6 +7,13 @@ import type { NextRequest, NextFetchEvent } from "next/server";
  * (bots, curl, LLM tools). This proxy is the only place that sees every
  * real hit to those paths, so it fires a fire-and-forget log call before
  * letting the static response through.
+ *
+ * Also covers /2026/llms.txt and /2026/ai/* — that path is rewritten
+ * (next.config.ts) to the nav-poc deployment via an external URL fetch, and
+ * that fetch doesn't reliably trigger nav-poc's own proxy (confirmed
+ * empirically 2026-08-05: hits to never-before-cached /2026/ai/cases/*
+ * paths never showed up in the sheet even after nav-poc got its own
+ * matching proxy). Catching it here, before the rewrite happens, works.
  */
 export function proxy(request: NextRequest, event: NextFetchEvent) {
   const logPromise = fetch(new URL("/api/log-hit", request.nextUrl.origin), {
@@ -26,5 +33,5 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
 }
 
 export const config = {
-  matcher: ["/llms.txt", "/ai/:path*"],
+  matcher: ["/llms.txt", "/ai/:path*", "/2026/llms.txt", "/2026/ai/:path*"],
 };
